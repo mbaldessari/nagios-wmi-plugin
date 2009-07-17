@@ -5,7 +5,7 @@
   <!-- Properties -->
 
   <property name="version" value="0.1"/>
-  <property name="classpath" value="/usr/share/java/jcifs.jar:/usr/share/java/j-interop.jar"/>
+  <property name="classpath" value="/usr/share/java/j-interopdeps.jar:/usr/share/java/j-interop.jar:/usr/share/java/jargs.jar"/>
   <property name="name" value="nagios-wmi-plugin-${version}"/>
   <property name="src" value="src"/>
   <property name="build" value="build"/>
@@ -30,16 +30,7 @@
   </target>
 
   <!-- Build classes -->
-  <target name="deps" depends="prepare">
-    <javac srcdir="${src.dep}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on"/>
-    <copy todir="${build.classes}">
-      <fileset dir="${src.dep}">
-        <include name="**/*.properties"/>
-      </fileset>
-    </copy>
-  </target>
-
-  <target name="classes" depends="deps,prepare">
+  <target name="classes" depends="prepare">
     <javac srcdir="${src}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on"/>
     <copy todir="${build.classes}">
       <fileset dir="${src}">
@@ -51,7 +42,6 @@
   <!-- Build jar archives -->
   <target name="jar" depends="classes">
     <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="org/**"/>
-    <jar jarfile="${build.lib}/${name.dep}.jar" basedir="${build.classes}" includes="com/**, ndr/**, rpc/**"/>
   </target>
 
   <!-- Build the full JavaDocs -->
