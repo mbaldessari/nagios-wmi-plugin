@@ -1,0 +1,81 @@
+<!-- ant build file for j-interop -->
+
+<project name="nagios-wmi-plugin" default="all" basedir=".">
+
+  <!-- Properties -->
+
+  <property name="version" value="0.1"/>
+  <property name="classpath" value="/usr/share/java/jcifs.jar:/usr/share/java/j-interop.jar"/>
+  <property name="name" value="nagios-wmi-plugin-${version}"/>
+  <property name="src" value="src"/>
+  <property name="build" value="build"/>
+  <property name="build.classes" value="${build}/classes"/>
+  <property name="build.doc" value="${build}/api"/>
+  <property name="build.lib" value="${build}/lib"/>
+  <property name="packagenames" value="com.*,org.*"/>
+
+  <!-- Targets -->
+
+  <!-- Prepare build directories -->
+  <target name="prepare">
+    <mkdir dir="${build}"/>
+    <mkdir dir="${build.classes}"/>
+    <mkdir dir="${build.lib}"/>
+    <mkdir dir="${build.doc}"/>
+  </target>
+
+  <!-- Kill all the created directories -->
+  <target name="clean">
+    <delete dir="${build}"/>
+  </target>
+
+  <!-- Build classes -->
+  <target name="deps" depends="prepare">
+    <javac srcdir="${src.dep}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on"/>
+    <copy todir="${build.classes}">
+      <fileset dir="${src.dep}">
+        <include name="**/*.properties"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="classes" depends="deps,prepare">
+    <javac srcdir="${src}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on"/>
+    <copy todir="${build.classes}">
+      <fileset dir="${src}">
+        <include name="**/*.properties"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <!-- Build jar archives -->
+  <target name="jar" depends="classes">
+    <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="org/**"/>
+    <jar jarfile="${build.lib}/${name.dep}.jar" basedir="${build.classes}" includes="com/**, ndr/**, rpc/**"/>
+  </target>
+
+  <!-- Build the full JavaDocs -->
+  <target name="javadoc" depends="prepare">
+    <javadoc sourcepath="${src.dep}"
+            destdir="${build.doc}"
+            doctitle="${name} JavaDoc"
+            windowtitle="${name} JavaDoc"
+            package="true"
+            author="true"
+            version="true"
+            packagenames="${packagenames}"
+    />
+    <javadoc sourcepath="${src}"
+            destdir="${build.doc}"
+            doctitle="${name} JavaDoc"
+            windowtitle="${name} JavaDoc"
+            package="true"
+            author="true"
+            version="true"
+            packagenames="${packagenames}"
+    />
+  </target>
+
+  <!-- Build everything -->
+  <target name="all" depends="jar,javadoc"/>
+</project>
