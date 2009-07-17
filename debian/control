@@ -1,0 +1,14 @@
+Source: nagios-wmi-plugin
+Section: java
+Priority: extra
+Maintainer: Michele Baldessari <michele@pupazzo.org>
+Build-Depends: debhelper (>= 5)
+Build-Depends-Indep: libjcifs-java, ant, default-jdk-builddep, dpatch, gij-4.3, libinterop-java
+Standards-Version: 3.8.1
+Homepage: https://github.com/mbaldessari/nagios-wmi-plugin/tree
+
+Package: nagios-wmi-plygin
+Architecture: all
+Depends: ${misc:Depends}, libinterop-java
+Description: Scripts to monitor Windows machines in Nagios
+ Scripts that help monitoring windows machines natively via WMI from Linux

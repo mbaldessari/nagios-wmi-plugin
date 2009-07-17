@@ -1,0 +1,87 @@
+#!/usr/bin/make -f
+
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+
+JINTEROP     = j-interop
+JINTEROPDEPS = j-interopdeps
+SOURCEPKG    = jinterop
+URL          = https://j-interop.svn.sourceforge.net/svnroot/j-interop/tags/
+VERSION      = 2.06
+get-orig-source:
+	mkdir $(SOURCEPKG)-$(VERSION)
+	svn export $(URL)$(JINTEROP)_release_$(VERSION) $(SOURCEPKG)-$(VERSION)/$(JINTEROP)_release_$(VERSION)
+	svn export $(URL)$(JINTEROPDEPS)_release_$(VERSION) $(SOURCEPKG)-$(VERSION)/$(JINTEROPDEPS)_release_$(VERSION)
+	tar cfz $(SOURCEPKG)_$(VERSION).orig.tar.gz $(SOURCEPKG)-$(VERSION)
+	rm -fr $(SOURCEPKG)-$(VERSION)
+
+unpatch:
+	dpatch deapply-all
+	rm -rf patch-stamp debian/patched
+
+patch: patch-stamp
+patch-stamp:
+	dpatch apply-all
+	dpatch cat-all >patch-stamp
+
+configure: configure-stamp
+configure-stamp: patch-stamp
+	dh_testdir
+	install -m 644 $(CURDIR)/debian/build.xml $(CURDIR)/
+	touch $@
+
+build: build-stamp
+build-stamp: configure-stamp
+	dh_testdir
+	ant 
+	touch $@
+
+clean: clean-patched unpatch
+clean-patched: 
+	dh_testdir
+	dh_testroot
+	[ ! -f build.xml ] || ant clean
+	rm -f build.xml *-stamp
+	dh_clean 
+
+install: build
+	install -d build/doc build/examples
+	install -m 644 -t build/doc j-interop_release_2.06/src/readme.htm
+	install -m 644 -t build/examples j-interop_release_2.06/src/org/jinterop/dcom/test/*
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	dh_install
+
+# Build architecture-dependent files here.
+binary-arch: build install
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+	dh_installchangelogs 
+	dh_link
+	dh_strip
+	dh_compress 
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep
+
+.PHONY: build clean binary-indep binary-arch binary install configure patch
