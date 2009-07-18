@@ -350,7 +350,7 @@ public class WindowsHealth {
         
         try {
             parser.parse(args);
-        } catch (CmdLineParser.OptionException e) {
+        } catch (Exception e) {
             fail(e.getMessage());
         }
         
@@ -454,10 +454,8 @@ public class WindowsHealth {
             for (char z : password) passwd += z;
             java.util.Arrays.fill(password, ' ');
         }
-
         
         String[] exclusions = exclude.split(",");
-        
         for (;(Boolean)parser.getOptionValue(verbose_op) != null; verbose++);
         for (;(Boolean)parser.getOptionValue(minimum_op) != null; verbose--);
         
@@ -475,15 +473,14 @@ public class WindowsHealth {
                     fail(e, verbose);
                 }
             }
+
             JISystem.setAutoRegisteration(true);
             WindowsHealth monitor = new WindowsHealth(host, domain, user, passwd, timeout, verbose > 2);
-            
-            
             LinkedList<String> warnings = new LinkedList<String>();
             LinkedList<String> criticals = new LinkedList<String>();
             boolean print;
             
-            for (int i=0; i<n_measures; i++) {
+            for (int i = 0; i < n_measures; i++) {
     
                 try {
                     Thread.sleep(delay);
@@ -499,7 +496,6 @@ public class WindowsHealth {
                     System.out.println(" - Measure " + (i + 1) + " -");
                 
                 if (cpu) {
-                    // CPU measure
                     print = false;
                     int percent_cpu = monitor.getCPUUsage();
                     if (percent_cpu >= cpu_critical) {
@@ -520,7 +516,6 @@ public class WindowsHealth {
                 }
     
                 if (memory) {
-                    // Memory measure
                     print = false;
                     long mem_size = monitor.getTotalMemorySize();
                     long mem_free = monitor.getFreeMemorySpace();
@@ -544,7 +539,6 @@ public class WindowsHealth {
                 }
                 
                 if (disk) {
-                    // Disk drives measure
                     LinkedList<IJIDispatch> drives = monitor.getDiskDrives();
                     
                     for (IJIDispatch drive : drives) {
