@@ -1,9 +1,7 @@
 <!-- ant build file for j-interop -->
-
 <project name="nagios-wmi-plugin" default="all" basedir=".">
 
   <!-- Properties -->
-
   <property name="version" value="0.1"/>
   <property name="classpath" value="/usr/share/java/j-interopdeps.jar:/usr/share/java/j-interop.jar:/usr/share/java/jargs.jar"/>
   <property name="name" value="nagios-wmi-plugin-${version}"/>
@@ -46,15 +44,6 @@
 
   <!-- Build the full JavaDocs -->
   <target name="javadoc" depends="prepare">
-    <javadoc sourcepath="${src.dep}"
-            destdir="${build.doc}"
-            doctitle="${name} JavaDoc"
-            windowtitle="${name} JavaDoc"
-            package="true"
-            author="true"
-            version="true"
-            packagenames="${packagenames}"
-    />
     <javadoc sourcepath="${src}"
             destdir="${build.doc}"
             doctitle="${name} JavaDoc"
