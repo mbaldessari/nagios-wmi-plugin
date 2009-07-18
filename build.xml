@@ -39,7 +39,7 @@
 
   <!-- Build jar archives -->
   <target name="jar" depends="classes">
-    <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="org/**"/>
+    <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="**"/>
   </target>
 
   <!-- Build the full JavaDocs -->
@@ -56,5 +56,5 @@
   </target>
 
   <!-- Build everything -->
-  <target name="all" depends="jar,javadoc"/>
+  <target name="all" depends="jar"/>
 </project>
