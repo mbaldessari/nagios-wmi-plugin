@@ -3,6 +3,7 @@
 
   <!-- Properties -->
   <property name="version" value="0.1"/>
+  <property name="user.name" value="Michele Baldessari"/>
   <property name="classpath" value="/usr/share/java/j-interopdeps.jar:/usr/share/java/j-interop.jar:/usr/share/java/jargs.jar"/>
   <property name="name" value="nagios-wmi-plugin-${version}"/>
   <property name="src" value="src"/>
@@ -39,7 +40,14 @@
 
   <!-- Build jar archives -->
   <target name="jar" depends="classes">
-    <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="**"/>
+    <jar jarfile="${build.lib}/${name}.jar" basedir="${build.classes}" includes="**/WindowsHealth.class">
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Implementation-Version" value="${version}"/>
+        <attribute name="Main-Class" value="WindowsHealth"/>
+      </manifest>
+    </jar>
+
   </target>
 
   <!-- Build the full JavaDocs -->
