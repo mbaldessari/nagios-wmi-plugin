@@ -6,6 +6,8 @@ DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 
+NAME = nagios-wmi-plugin
+VERSION = 0.1
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -13,18 +15,6 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 else
 	CFLAGS += -O2
 endif
-
-JINTEROP     = j-interop
-JINTEROPDEPS = j-interopdeps
-SOURCEPKG    = jinterop
-URL          = https://j-interop.svn.sourceforge.net/svnroot/j-interop/tags/
-VERSION      = 2.06
-get-orig-source:
-	mkdir $(SOURCEPKG)-$(VERSION)
-	svn export $(URL)$(JINTEROP)_release_$(VERSION) $(SOURCEPKG)-$(VERSION)/$(JINTEROP)_release_$(VERSION)
-	svn export $(URL)$(JINTEROPDEPS)_release_$(VERSION) $(SOURCEPKG)-$(VERSION)/$(JINTEROPDEPS)_release_$(VERSION)
-	tar cfz $(SOURCEPKG)_$(VERSION).orig.tar.gz $(SOURCEPKG)-$(VERSION)
-	rm -fr $(SOURCEPKG)-$(VERSION)
 
 unpatch:
 	dpatch deapply-all
@@ -38,13 +28,12 @@ patch-stamp:
 configure: configure-stamp
 configure-stamp: patch-stamp
 	dh_testdir
-	install -m 644 $(CURDIR)/debian/build.xml $(CURDIR)/
 	touch $@
 
 build: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
-	ant 
+	ant jar
 	touch $@
 
 clean: clean-patched unpatch
@@ -52,18 +41,18 @@ clean-patched:
 	dh_testdir
 	dh_testroot
 	[ ! -f build.xml ] || ant clean
-	rm -f build.xml *-stamp
 	dh_clean 
 
 install: build
-	install -d build/doc build/examples
-	install -m 644 -t build/doc j-interop_release_2.06/src/readme.htm
-	install -m 644 -t build/examples j-interop_release_2.06/src/org/jinterop/dcom/test/*
+	install -d  $(CURDIR)/debian/tmp/usr/share/java
+	install -d  $(CURDIR)/debian/tmp/usr/bin
+	install -m 644 $(CURDIR)/build/lib/$(NAME)-$(VERSION).jar $(CURDIR)/debian/tmp/usr/share/java
+	install -m 755 $(CURDIR)/debian/$(NAME).sh $(CURDIR)/debian/tmp/usr/bin/$(NAME)
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	#dh_clean -k
 	dh_installdirs
-	dh_install
+	dh_install --sourcedir=debian/tmp
 
 # Build architecture-dependent files here.
 binary-arch: build install

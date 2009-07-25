@@ -2,4 +2,4 @@ nagios-wmi-plugin (0.1-1) unstable; urgency=low
 
   * Initial packaging
 
- -- Michele Baldessari <michele@pupazzo.org>, Fri Jul 17 13:51:53 CEST 2009
+ -- Michele Baldessari <michele@pupazzo.org>  Fri, 21 Jul 2009 21:44:12 +0200

@@ -1,3 +1,20 @@
+/* nagios-wmi-plugin
+ * Copyright (C) 2009  Michele Baldessari, Alexander Sparber
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; 
+ * version 3 of the License.
+ *
+ * Though a sincere effort has been made to deliver a professional, 
+ * quality product,the library itself is distributed WITHOUT ANY WARRANTY; 
+ * See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
