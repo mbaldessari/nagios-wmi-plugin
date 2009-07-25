@@ -16,17 +16,9 @@ else
 	CFLAGS += -O2
 endif
 
-unpatch:
-	dpatch deapply-all
-	rm -rf patch-stamp debian/patched
-
-patch: patch-stamp
-patch-stamp:
-	dpatch apply-all
-	dpatch cat-all >patch-stamp
 
 configure: configure-stamp
-configure-stamp: patch-stamp
+configure-stamp: 
 	dh_testdir
 	touch $@
 
@@ -36,7 +28,7 @@ build-stamp: configure-stamp
 	ant jar
 	touch $@
 
-clean: clean-patched unpatch
+clean: clean-patched 
 clean-patched: 
 	dh_testdir
 	dh_testroot
