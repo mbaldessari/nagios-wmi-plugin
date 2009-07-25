@@ -3,8 +3,8 @@ Section: java
 Priority: extra
 Maintainer: Michele Baldessari <michele@pupazzo.org>
 Build-Depends: debhelper (>= 5)
-Build-Depends-Indep: libjcifs-java, ant, default-jdk-builddep, dpatch, gij-4.3, libjinterop-java, libjargs-java
-Standards-Version: 3.8.1
+Build-Depends-Indep: libjcifs-java, ant, openjdk-6-jdk, libjinterop-java, libjargs-java
+Standards-Version: 3.8.2
 Homepage: https://github.com/mbaldessari/nagios-wmi-plugin/tree
 
 Package: nagios-wmi-plugin

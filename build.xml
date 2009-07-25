@@ -30,7 +30,7 @@
 
   <!-- Build classes -->
   <target name="classes" depends="prepare">
-    <javac srcdir="${src}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on"/>
+    <javac srcdir="${src}" classpath="${classpath}" destdir="${build.classes}" debug="on" optimize="on" source="1.6"/>
     <copy todir="${build.classes}">
       <fileset dir="${src}">
         <include name="**/*.properties"/>
