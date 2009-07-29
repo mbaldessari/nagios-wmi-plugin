@@ -4,8 +4,8 @@
   <!-- Properties -->
   <property name="version" value="0.1"/>
   <property name="user.name" value="Michele Baldessari"/>
-  <property name="classpath" value="/usr/share/java/jcifs.jar:/usr/share/java/j-interopdeps.jar:/usr/share/java/j-interop.jar:/usr/share/java/jargs.jar"/>
-  <property name="jarclasspath" value="/usr/share/java/jcifs.jar /usr/share/java/j-interopdeps.jar /usr/share/java/j-interop.jar /usr/share/java/jargs.jar"/>
+  <property name="classpath" value="/usr/share/java/jcifs.jar:/usr/share/java/j-interopdeps.jar:/usr/share/java/j-interop.jar:/usr/share/java/jargs.jar:/usr/share/java/gnu-crypto.jar"/>
+  <property name="jarclasspath" value="/usr/share/java/jcifs.jar /usr/share/java/j-interopdeps.jar /usr/share/java/j-interop.jar /usr/share/java/jargs.jar /usr/share/java/gnu-crypto.jar"/>
   <property name="name" value="nagios-wmi-plugin-${version}"/>
   <property name="src" value="src"/>
   <property name="build" value="build"/>
