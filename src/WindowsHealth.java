@@ -316,7 +316,7 @@ public class WindowsHealth {
         String user = "";
         String passwd = "";
         int timeout = 5000;
-        
+
         int n_measures = 1;
         int delay = 1000;
 
@@ -331,14 +331,13 @@ public class WindowsHealth {
         boolean disk = false;
         int disk_warning = 50;
         int disk_critical = 80;
-        
+
         boolean service = false;
         String exclude = "";
         int serv_warning = 1;
         int serv_critical = 5;
-        
         int verbose = 1;
-        
+
         CmdLineParser parser = new CmdLineParser();
         Option host_op = parser.addStringOption('t', "targethost");
         Option domain_op = parser.addStringOption('d', "domain");
@@ -381,8 +380,7 @@ public class WindowsHealth {
         }
         
         String[] remaining_args = parser.getRemainingArgs();
-        if (remaining_args.length == 0);
-        else if (remaining_args.length == 1) {
+        if (remaining_args.length != 1) {
             String settingsFile = args[0];
             if (! new File(settingsFile).exists())
                 fail("Settingsfile '" + settingsFile + "' not found");
