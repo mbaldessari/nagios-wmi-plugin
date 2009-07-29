@@ -18,12 +18,19 @@
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Properties;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.SimpleFormatter;
 
 import org.jinterop.dcom.common.JIException;
 import org.jinterop.dcom.common.JISystem;
@@ -35,6 +42,7 @@ import org.jinterop.dcom.impls.automation.JIAutomationException;
 import org.jinterop.dcom.impls.automation.JIExcepInfo;
 
 import jargs.gnu.CmdLineParser;
+import jargs.gnu.CmdLineParser.IllegalOptionValueException;
 import jargs.gnu.CmdLineParser.Option;
 
 public class WindowsHealth {
@@ -81,8 +89,12 @@ public class WindowsHealth {
         "                                         services are not running (default is 5)\n" +
         "   \n" +
         "   -h / --help                           display this help message\n" +
-        "   -v / --verbose                        set verbose output\n" +
-        "   -m / --minimum                        set minimum output\n" +
+        "   -v / --verbose                        be extra verbose\n" +
+        "   -q / --quiet                          be extra quiet\n" +
+        "   -l <Level> / --logging <Level>        set the logging level (default is OFF)\n" +
+        "                                         possible values are:\n" +
+        "                                          ALL, CONFIG, FINE, FINER, FINEST,\n" +
+        "                                          INFO, OFF, SERVERE, WARNING\n" +
         "   -V / --version                        display version information\n" +
         "\n";
 
@@ -92,6 +104,9 @@ public class WindowsHealth {
     private JISession session;
     private JIVariant service;
     private IJIDispatch service_dispatch;
+    
+    private long percentprocessortime;
+    private long timestamp;
 
     public WindowsHealth(String address, String domain, 
             String user, String passwd, int timeout, boolean verbose)
@@ -124,11 +139,15 @@ public class WindowsHealth {
         service_dispatch = (IJIDispatch)JIObjectFactory.narrowObject(service.getObjectAsComObject());
         if (verbose)
             System.out.println("OK");
+        
+        percentprocessortime = -1;
+        timestamp = -1;
     }
 
     public LinkedList<IJIDispatch> getDiskDrives() throws JIException {
         System.gc();
 
+        // get all local disks
         JIVariant results[] = service_dispatch.callMethodA("ExecQuery", new Object[]{
             new JIString("select * from Win32_LogicalDisk where DriveType = 3"), 
             JIVariant.OPTIONAL_PARAM(), JIVariant.OPTIONAL_PARAM(),JIVariant.OPTIONAL_PARAM()});
@@ -140,8 +159,7 @@ public class WindowsHealth {
 
         LinkedList<IJIDispatch> drives = new LinkedList<IJIDispatch>();
         
-        JIVariant Count = wbemObjectSet_dispatch.get("Count");
-        int count = Count.getObjectAsInt();
+        int count = wbemObjectSet_dispatch.get("Count").getObjectAsInt();
         for (int i = 0; i < count; i++) {
             Object[] values = enumVARIANT.next(1);
             JIArray array = (JIArray)values[0];
@@ -164,21 +182,13 @@ public class WindowsHealth {
         IJIComObject object2 = variant.getObjectAsComObject();
 
         IJIEnumVariant enumVARIANT = (IJIEnumVariant)JIObjectFactory.narrowObject(object2.queryInterface(IJIEnumVariant.IID));
+        if (wbemObjectSet_dispatch.get("Count").getObjectAsInt() != 1)
+            return -1; // there should be 1 hint
 
-        long totalsize = 0;
-
-        JIVariant Count = wbemObjectSet_dispatch.get("Count");
-        int count = Count.getObjectAsInt();
-        for (int i = 0; i < count; i++) {
-            Object[] values = enumVARIANT.next(1);
-            JIArray array = (JIArray)values[0];
-            JIVariant[] variants = (JIVariant[])array.getArrayInstance();
-            for (JIVariant item : variants) {
-                IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject(item.getObjectAsComObject());
-                totalsize = Long.parseLong(wbemObject_dispatch.get("TotalVisibleMemorySize").getObjectAsString().getString());
-            }
-        }
-        return totalsize;
+        JIArray array = (JIArray)enumVARIANT.next(1)[0];
+        JIVariant[] variants = (JIVariant[])array.getArrayInstance();
+        IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject(variants[0].getObjectAsComObject());
+        return Long.parseLong(wbemObject_dispatch.get("TotalVisibleMemorySize").getObjectAsString().getString());
     }
     
     public long getFreeMemorySpace() throws JIException {
@@ -192,47 +202,42 @@ public class WindowsHealth {
         IJIComObject object2 = variant.getObjectAsComObject();
 
         IJIEnumVariant enumVARIANT = (IJIEnumVariant)JIObjectFactory.narrowObject(object2.queryInterface(IJIEnumVariant.IID));
+        if (wbemObjectSet_dispatch.get("Count").getObjectAsInt() != 1)
+            return -1; // there should be 1 hint
 
-        long freespace = 0;
-
-        JIVariant Count = wbemObjectSet_dispatch.get("Count");
-        int count = Count.getObjectAsInt();
-        for (int i = 0; i < count; i++) {
-            Object[] values = enumVARIANT.next(1);
-            JIArray array = (JIArray)values[0];
-            JIVariant[] variants = (JIVariant[])array.getArrayInstance();
-            for (JIVariant item : variants) {
-                IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject(item.getObjectAsComObject());
-                freespace = Long.parseLong(wbemObject_dispatch.get("AvailableKBytes").getObjectAsString().getString());
-            }
-        }
-        return freespace;
+        JIArray array = (JIArray)enumVARIANT.next(1)[0];
+        JIVariant item = ((JIVariant[])array.getArrayInstance())[0];
+        IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject(item.getObjectAsComObject());
+        return Long.parseLong(wbemObject_dispatch.get("AvailableKBytes").getObjectAsString().getString());
     }
     
     public int getCPUUsage() throws JIException {
-        int usage = 0;
-        int i = 0;
         System.gc();
         
-        try {
-            while (true) {
-                JIVariant results[] = service_dispatch.callMethodA("Get", new Object[]{
-                    new JIString("Win32_Processor.DeviceID='CPU" + i + "'"), new Integer(0), JIVariant.OPTIONAL_PARAM()});
-                IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject((results[0]).getObjectAsComObject());
-                usage += wbemObject_dispatch.get("LoadPercentage").getObjectAsInt();
-                i++;
-            }
-        } catch (JIException e) {
-            if (i == 0) {
-                throw e;
-            }
+        JIVariant results[] = service_dispatch.callMethodA("Get", new Object[]{
+                new JIString("Win32_PerfRawData_PerfOS_Processor.Name='_Total'"), new Integer(0), JIVariant.OPTIONAL_PARAM()});
+
+        IJIDispatch wbemObject_dispatch = (IJIDispatch)JIObjectFactory.narrowObject((results[0]).getObjectAsComObject());
+        long ppt = Long.parseLong(wbemObject_dispatch.get("PercentProcessorTime").getObjectAsString().getString());
+        long tss = Long.parseLong(wbemObject_dispatch.get("TimeStamp_Sys100NS").getObjectAsString().getString());
+        
+        if (this.percentprocessortime == -1 && this.timestamp == -1) {
+            this.percentprocessortime = ppt;
+            this.timestamp = tss;
+            return -1;
         }
-        return usage / i;
+        
+        double load = (1 - ((double)(this.percentprocessortime - ppt)/(double)(this.timestamp - tss))) * 100;
+        this.percentprocessortime = ppt;
+        this.timestamp = tss;
+        
+        return (int)Math.round(load);
     }
 
     public LinkedList<IJIDispatch> getServices() throws JIException {
         System.gc();
 
+        // get all services which should start automatically but are not running
         JIVariant results[] = service_dispatch.callMethodA("ExecQuery", new Object[]{
             new JIString("select * from Win32_Service where StartMode = 'Auto' and Started = FALSE"),
             JIVariant.OPTIONAL_PARAM(), JIVariant.OPTIONAL_PARAM(),JIVariant.OPTIONAL_PARAM()});
@@ -244,8 +249,7 @@ public class WindowsHealth {
 
         LinkedList<IJIDispatch> services = new LinkedList<IJIDispatch>();
         
-        JIVariant Count = wbemObjectSet_dispatch.get("Count");
-        int count = Count.getObjectAsInt();
+        int count = wbemObjectSet_dispatch.get("Count").getObjectAsInt();
         for (int i = 0; i < count; i++) {
             Object[] values = enumVARIANT.next(1);
             JIArray array = (JIArray)values[0];
@@ -262,26 +266,27 @@ public class WindowsHealth {
         JISession.destroySession(session);
     }
     
-    private static int getPercentage(String value) throws NumberFormatException {
-        int i = Integer.parseInt(value);
-        if (!(i >= 0 && i <= 100)) {
-            throw new NumberFormatException("invalid value '" + value + "'");
+    private static int getPercentage(int value) throws NumberFormatException {
+        // check if the value is between 0 and 100
+        if (!(value >= 0 && value <= 100)) {
+            throw new NumberFormatException("Illegal value '" + value + "'");
         }
-        return i;
+        return value;
     }
     
-    private static String getSizeRepresentation(double size, int stellen) {
+    private static String getSizeRepresentation(double size, int dec_places) {
+        // get a nice representation in byte, kB, MB, GB or TB
         char sizes[] = {' ', 'k', 'M', 'G', 'T'};
         int i=0;
         while (size > 1024.0) {
             size /= 1024.0;
             i++;
         }
-        return "" + round(size, stellen) + " " + sizes[i] + "B";
+        return "" + round(size, dec_places) + " " + sizes[i] + "B";
     }
     
-    private static double round(double d, int stellen) {
-        return ((double)Math.round(d * Math.pow(10, stellen))) / Math.pow(10, stellen);
+    private static double round(double d, int dec_places) {
+        return ((double)Math.round(d * Math.pow(10, dec_places))) / Math.pow(10, dec_places);
     }
     
     private static void fail(String message) {
@@ -299,7 +304,10 @@ public class WindowsHealth {
             if (cause == null)
                 System.out.println();
             else
-                System.out.println(" (" + cause.getMessage() + ")");
+            	if (!e.getMessage().equals(cause.getMessage()))
+                    System.out.println(" (" + cause.getMessage() + ")");
+                else
+                    System.out.println();
         }
         System.exit(3);
     }
@@ -309,8 +317,24 @@ public class WindowsHealth {
             e.printStackTrace();
         System.exit(3);
     }
+    
+    public static Object getValue(CmdLineParser parser, Properties properties, Option op, Object default_value) throws IllegalOptionValueException {
+        // get the value from the settingsfile
+        String value = properties.getProperty(op.longForm(), default_value.toString());
+        // update the value with the arguments
+        Object o = parser.getOptionValue(op, value);
+        if (o == null)
+            return null; // no more values of this option in the arguments
+        if (op.getClass().equals(Option.BooleanOption.class))
+            // differentiate betwenn booleans and other values
+            // otherwise it would always be 'true'
+            return Boolean.parseBoolean(o.toString());
+        // return the parsed value
+        return op.getValue(o.toString(), Locale.getDefault());
+    }
 
     public static void main(String[] args) {
+        // default values
         String host = "";
         String domain = "";
         String user = "";
@@ -336,8 +360,11 @@ public class WindowsHealth {
         String exclude = "";
         int serv_warning = 1;
         int serv_critical = 5;
-        int verbose = 1;
 
+        int verbose = 1;
+        Level logging = Level.OFF;
+
+        // create a new parser and add all possible options
         CmdLineParser parser = new CmdLineParser();
         Option host_op = parser.addStringOption('t', "targethost");
         Option domain_op = parser.addStringOption('d', "domain");
@@ -347,77 +374,101 @@ public class WindowsHealth {
         Option n_measures_op = parser.addIntegerOption('n', "number_of_measures");
         Option delay_op = parser.addIntegerOption("delay");
         Option cpu_op = parser.addBooleanOption("cpu");
-        Option cpu_warning_op = parser.addStringOption("cpu_warning");
-        Option cpu_critical_op = parser.addStringOption("cpu_critical");
+        Option cpu_warning_op = parser.addIntegerOption("cpu_warning");
+        Option cpu_critical_op = parser.addIntegerOption("cpu_critical");
         Option memory_op = parser.addBooleanOption("memory");
-        Option mem_warning_op = parser.addStringOption("mem_warning");
-        Option mem_critical_op = parser.addStringOption("mem_critical");
+        Option mem_warning_op = parser.addIntegerOption("mem_warning");
+        Option mem_critical_op = parser.addIntegerOption("mem_critical");
         Option disk_op = parser.addBooleanOption("disk");
-        Option disk_warning_op = parser.addStringOption("disk_warning");
-        Option disk_critical_op = parser.addStringOption("disk_critical");
+        Option disk_warning_op = parser.addIntegerOption("disk_warning");
+        Option disk_critical_op = parser.addIntegerOption("disk_critical");
         Option service_op = parser.addBooleanOption("services");
         Option exclude_op = parser.addStringOption('x', "exclude");
-        Option serv_warning_op = parser.addStringOption("serv_warning");
-        Option serv_critical_op = parser.addStringOption("serv_critical");
+        Option serv_warning_op = parser.addIntegerOption("serv_warning");
+        Option serv_critical_op = parser.addIntegerOption("serv_critical");
         Option help_op = parser.addBooleanOption('h', "help");
         Option verbose_op = parser.addBooleanOption('v', "verbose");
-        Option minimum_op = parser.addBooleanOption('m', "minimum");
+        Option quiet_op = parser.addBooleanOption('q', "quiet");
+        Option logging_op = parser.addStringOption('l', "logging");
         Option version_op = parser.addBooleanOption('V', "version");
         
         try {
+            // parse the arguments
             parser.parse(args);
         } catch (Exception e) {
             fail(e.getMessage());
         }
         
+        // -h or --help option was given just print helpmessage and exit
         if ((Boolean)parser.getOptionValue(help_op, false)) {
             System.out.println(helpmessage);
             System.exit(0);
         }
+        // -V or --version option was given just print version information and exit
         if ((Boolean)parser.getOptionValue(version_op, false)) {
             System.out.println(version);
             System.exit(0);
         }
         
-        String[] remaining_args = parser.getRemainingArgs();
-        if (remaining_args.length != 1) {
-            String settingsFile = args[0];
-            if (! new File(settingsFile).exists())
-                fail("Settingsfile '" + settingsFile + "' not found");
-            Properties properties = new Properties();
-            try {
-                properties.load(new FileInputStream(settingsFile));
-            } catch (IOException e) {
-                fail(e.getMessage());
-            }
-            try {
-                host = properties.getProperty("targethost", host);
-                domain = properties.getProperty("domain", domain);
-                user = properties.getProperty("user", user);
-                passwd = properties.getProperty("password", passwd);
-                timeout = Integer.parseInt(properties.getProperty("timeout", Integer.toString(timeout)));
-                n_measures = Integer.parseInt(properties.getProperty("number_of_measures", Integer.toString(n_measures)));
-                delay = Integer.parseInt(properties.getProperty("delay", Integer.toString(delay)));
-                cpu = Boolean.parseBoolean(properties.getProperty("cpu", Boolean.toString(cpu)));
-                cpu_warning = getPercentage(properties.getProperty("cpu_warning", Integer.toString(cpu_warning)));
-                cpu_critical = getPercentage(properties.getProperty("cpu_critical", Integer.toString(cpu_critical)));
-                memory = Boolean.parseBoolean(properties.getProperty("memory", Boolean.toString(memory)));
-                mem_warning = getPercentage(properties.getProperty("mem_warning", Integer.toString(mem_warning)));
-                mem_critical = getPercentage(properties.getProperty("mem_critical", Integer.toString(mem_critical)));
-                disk = Boolean.parseBoolean(properties.getProperty("disk", Boolean.toString(disk)));
-                disk_warning = getPercentage(properties.getProperty("disk_warning", Integer.toString(disk_warning)));
-                disk_critical = getPercentage(properties.getProperty("disk_critical", Integer.toString(disk_critical)));
-                service = Boolean.parseBoolean(properties.getProperty("services", Boolean.toString(service)));
-                exclude = properties.getProperty("exclude", exclude);
-                serv_warning = Integer.parseInt(properties.getProperty("serv_warning", Integer.toString(serv_warning)));
-                serv_critical =Integer.parseInt(properties.getProperty("serv_critical", Integer.toString(serv_critical)));
-            } catch (NumberFormatException e) {
-                fail(e.getMessage());
-            }
-        } else {
-            fail("Syntax Error");
+        // check if a settingsfile was given and check if it exists
+        if (args.length == 0)
+            fail("Please provide a settingsfile");
+        String settingsFile = args[0];
+        if (! new File(settingsFile).exists())
+            fail("Settingsfile '" + settingsFile + "' not found");
+        if (parser.getRemainingArgs().length != 1)
+            fail("Syntax error");
+        
+        // 
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream(settingsFile));
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+        try {
+            // get all values
+            
+            host = (String)getValue(parser, properties, host_op, host);
+            domain = (String)getValue(parser, properties, domain_op, domain);
+            user = (String)getValue(parser, properties, user_op, user);
+            passwd = (String)getValue(parser, properties, passwd_op, passwd);
+             
+            timeout = (Integer)getValue(parser, properties, timeout_op, timeout);
+            n_measures = (Integer)getValue(parser, properties, n_measures_op, n_measures);
+            delay = (Integer)getValue(parser, properties, delay_op, delay);
+
+            cpu = (Boolean)getValue(parser, properties, cpu_op, cpu);
+            cpu_warning = getPercentage((Integer)getValue(parser, properties, cpu_warning_op, cpu_warning));
+            cpu_critical = getPercentage((Integer)getValue(parser, properties, cpu_critical_op, cpu_critical));
+            
+            memory = (Boolean)getValue(parser, properties, memory_op, memory);
+            mem_warning = getPercentage((Integer)getValue(parser, properties, mem_warning_op, mem_warning));
+            mem_critical = getPercentage((Integer)getValue(parser, properties, mem_critical_op, mem_critical));
+            
+            disk = (Boolean)getValue(parser, properties, disk_op, disk);
+            disk_warning = getPercentage((Integer)getValue(parser, properties, disk_warning_op, disk_warning));
+            disk_critical = getPercentage((Integer)getValue(parser, properties, disk_critical_op, disk_critical));
+            
+            service = (Boolean)getValue(parser, properties, service_op, service);
+            exclude = (String)getValue(parser, properties, exclude_op, service);
+            serv_warning = (Integer)getValue(parser, properties, serv_warning_op, serv_warning);
+            serv_critical = (Integer)getValue(parser, properties, serv_critical_op, serv_critical);
+            
+            verbose += parser.getOptionValues(verbose_op).size();
+            verbose -= parser.getOptionValues(quiet_op).size();
+
+            logging = Level.parse((String)getValue(parser, properties, logging_op, logging));
+            
+        } catch (NumberFormatException e) {
+            fail(e.getMessage());
+        } catch (IllegalOptionValueException e) {
+            fail(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            fail(e.getMessage());
         }
         
+        // check if all necessary values were given
         if (host.isEmpty() || domain.isEmpty() || user.isEmpty() || passwd.isEmpty()) {
             String message = "Following values are missing: ";
             if (host.isEmpty())
@@ -432,56 +483,50 @@ public class WindowsHealth {
             fail(message);
         }
         
-        host = (String)parser.getOptionValue(host_op, host);
-        domain = (String)parser.getOptionValue(domain_op, domain);
-        user = (String)parser.getOptionValue(user_op, user);
-        passwd = (String)parser.getOptionValue(passwd_op, passwd);
-        timeout = (Integer)parser.getOptionValue(timeout_op, timeout);
-        n_measures = (Integer)parser.getOptionValue(n_measures_op, n_measures);
-        delay = (Integer)parser.getOptionValue(delay_op, delay);
-        cpu = (Boolean)parser.getOptionValue(cpu_op, cpu);
-        memory = (Boolean)parser.getOptionValue(memory_op, memory);
-        disk = (Boolean)parser.getOptionValue(disk_op, disk);
-        service = (Boolean)parser.getOptionValue(service_op, service);
-        exclude = (String)parser.getOptionValue(exclude_op, exclude);
-        try {
-            cpu_warning = getPercentage((String)parser.getOptionValue(cpu_warning_op, Integer.toString(cpu_warning)));
-            cpu_critical = getPercentage((String)parser.getOptionValue(cpu_critical_op, Integer.toString(cpu_critical)));
-            mem_warning = getPercentage((String)parser.getOptionValue(mem_warning_op, Integer.toString(mem_warning)));
-            mem_critical = getPercentage((String)parser.getOptionValue(mem_critical_op, Integer.toString(mem_critical)));
-            disk_warning = getPercentage((String)parser.getOptionValue(disk_warning_op, Integer.toString(disk_warning)));
-            disk_critical = getPercentage((String)parser.getOptionValue(disk_critical_op, Integer.toString(disk_critical)));
-            serv_warning = getPercentage((String)parser.getOptionValue(serv_warning_op, Integer.toString(serv_warning)));
-            serv_critical = getPercentage((String)parser.getOptionValue(serv_critical_op, Integer.toString(serv_critical)));
-        } catch (NumberFormatException e) {
-            fail(e.getMessage());
-        }
-        
+        // if the password is a asterisk prompt the user
         if (passwd.equals("*")) {
             Console cons = System.console();
             if (cons == null)
                 fail("must use a console");
             System.out.print("Password: ");
             char[] password = cons.readPassword();
-            if (passwd == null)
+            if (password == null)
                 fail("getting password failed");
             passwd = "";
             for (char z : password) passwd += z;
             java.util.Arrays.fill(password, ' ');
         }
         
-        String[] exclusions = exclude.split(",");
-        for (;(Boolean)parser.getOptionValue(verbose_op) != null; verbose++);
-        for (;(Boolean)parser.getOptionValue(minimum_op) != null; verbose--);
-        
-        boolean warning = false;
-        boolean critical = false;
+        // all warnings and critical messages are added to this lists
+        LinkedList<String> warnings = new LinkedList<String>();
+        LinkedList<String> criticals = new LinkedList<String>();
         
         try {
-            if (verbose < 4) {
-                JISystem.getLogger().setLevel(Level.OFF);
+            try {
+                // disable console logging
+                JISystem.setInBuiltLogHandler(false);
+                Handler inbuildloghandler = JISystem.getLogger().getHandlers()[0];
+                JISystem.getLogger().removeHandler(inbuildloghandler);
+                inbuildloghandler.close();
+            } catch (IOException e) {}
+            catch (SecurityException e) {}
+            
+            JISystem.getLogger().setLevel(logging);
+            if (logging != Level.OFF) {
+                // enable file logging
+                Random r = new Random();
+                // create a random string with a length of 12 - 13 characters
+                String token = Long.toString(Math.abs(r.nextLong()), 36);
                 try {
-                    JISystem.setInBuiltLogHandler(false);
+                    String tmpdir = System.getProperty("java.io.tmpdir");
+                    // on windows java.io.tmpdir ends with a slash on unix not
+                    if (!tmpdir.endsWith(File.separator))
+                        tmpdir = tmpdir + File.separator;
+                    FileHandler logFile = new FileHandler(tmpdir + "j-Interop-" + token + ".log");
+                    logFile.setFormatter(new SimpleFormatter());
+                    JISystem.getLogger().addHandler(logFile);
+                } catch (FileNotFoundException e) {
+                    System.out.println("ERROR: Failed to open log file: " + e.getMessage());
                 } catch (SecurityException e) {
                     fail(e, verbose);
                 } catch (IOException e) {
@@ -490,10 +535,13 @@ public class WindowsHealth {
             }
 
             JISystem.setAutoRegisteration(true);
+            
             WindowsHealth monitor = new WindowsHealth(host, domain, user, passwd, timeout, verbose > 2);
-            LinkedList<String> warnings = new LinkedList<String>();
-            LinkedList<String> criticals = new LinkedList<String>();
+            
             boolean print;
+            
+            if (cpu)
+                monitor.getCPUUsage(); // first measure gives no result
             
             for (int i = 0; i < n_measures; i++) {
     
@@ -510,17 +558,16 @@ public class WindowsHealth {
                 if (verbose > 1 && n_measures > 1)
                     System.out.println(" - Measure " + (i + 1) + " -");
                 
+                // cpu load measure
                 if (cpu) {
                     print = false;
                     int percent_cpu = monitor.getCPUUsage();
                     if (percent_cpu >= cpu_critical) {
-                        critical = true;
                         criticals.add("CPU (" + percent_cpu + "%)");
                         print = true;
                         if (verbose > 0)
                             System.out.print("CRITICAL: ");
                     } else if (percent_cpu >= cpu_warning) {
-                        warning = true;
                         warnings.add("CPU (" + percent_cpu + "%)");
                         print = true;
                         if (verbose > 0)
@@ -529,7 +576,8 @@ public class WindowsHealth {
                     if ((print && verbose > 0) || verbose > 1)
                         System.out.println("CPU usage: " + percent_cpu + " %");
                 }
-    
+
+                // memory space measure
                 if (memory) {
                     print = false;
                     long mem_size = monitor.getTotalMemorySize();
@@ -537,13 +585,11 @@ public class WindowsHealth {
                     long mem_used = mem_size - mem_free;
                     double percent_mem = (double)mem_used / (double)mem_size * 100;
                     if (percent_mem >= mem_critical) {
-                        critical = true;
                         criticals.add("Memory (" + round(percent_mem, 1) + "%)");
                         print = true;
                         if (verbose > 0)
                             System.out.print("CRITICAL: ");
                     } else if (percent_mem >= mem_warning) {
-                        warning = true;
                         warnings.add("Memory (" + round(percent_mem, 1) + "%)");
                         print = true;
                         if (verbose > 0)
@@ -552,7 +598,8 @@ public class WindowsHealth {
                     if ((print && verbose > 0) || verbose > 1)
                         System.out.println("Memory: " + round(percent_mem, 2) + " % used (" + mem_used + " KB)");
                 }
-                
+
+                // disk space measure
                 if (disk) {
                     LinkedList<IJIDispatch> drives = monitor.getDiskDrives();
                     
@@ -574,13 +621,11 @@ public class WindowsHealth {
                         }
                         
                         if (percent_disk >= disk_critical) {
-                            critical = true;
                             criticals.add(name + " (" + round(percent_disk, 1) + "%)");
                             print = true;
                             if (verbose > 0)
                                 System.out.print("CRITICAL: ");
                         } else if (percent_disk >= disk_warning) {
-                            warning = true;
                             warnings.add(name + " (" + round(percent_disk, 1) + "%)");
                             print = true;
                             if (verbose > 0)
@@ -591,22 +636,22 @@ public class WindowsHealth {
                             System.out.println(name + " " + round(percent_disk, 3) + " % used (" + getSizeRepresentation(disk_used, 3) + ")");
                     }
                 }
-                
+
+                // find services
                 if (service) {
                     
                     LinkedList<IJIDispatch> services = monitor.getServices();
                     LinkedList<IJIDispatch> services_final = new LinkedList<IJIDispatch>();
                     
+                    Scanner scanner = new Scanner(exclude);
+                    scanner.useDelimiter("\\s*,\\s*");
+                    LinkedList<String> exclusions = new LinkedList<String>();
+                    while (scanner.hasNext())
+                        exclusions.add(scanner.next());
+
                     for (IJIDispatch service_dispatch : services) {
-                        boolean del = false;
                         String name = service_dispatch.get("DisplayName").getObjectAsString2();
-                        for (String x : exclusions) {
-                            if (x.equalsIgnoreCase(name)) {
-                                del = true;
-                                break;
-                            }
-                        }
-                        if (!del)
+                        if (!exclusions.contains(name))
                             services_final.add(service_dispatch);
                     }
                     
@@ -614,17 +659,15 @@ public class WindowsHealth {
                     String name;
                     
                     String serv = "services (";
-                    for (IJIDispatch service_dispatch1 : services_final) {
-                        name = service_dispatch1.get("DisplayName").getObjectAsString2();
+                    for (IJIDispatch service_dispatch : services_final) {
+                        name = service_dispatch.get("DisplayName").getObjectAsString2();
                         serv += name + ";";
                     }
                     serv += ")";
                     
                     if (size >= serv_critical) {
-                        critical = true;
                         criticals.add(serv);
                     } else if (size >= serv_warning) {
-                        warning = true;
                         warnings.add(serv);
                     } else if (verbose == 1)
                         continue;
@@ -636,8 +679,8 @@ public class WindowsHealth {
                             System.out.print("WARNING: ");
                         if (verbose == 1) {
                             System.out.print(size + " service(s) (");
-                            for (IJIDispatch service_dispatch2 : services_final) {
-                                name = service_dispatch2.get("DisplayName").getObjectAsString2();
+                            for (IJIDispatch service_dispatch : services_final) {
+                                name = service_dispatch.get("DisplayName").getObjectAsString2();
                                 System.out.print(name + ";");
                             }
                             System.out.println(") are/is not running");
@@ -647,8 +690,8 @@ public class WindowsHealth {
                                 System.out.println(".");
                             else
                                 System.out.println(":");
-                            for (IJIDispatch service_dispatch3 : services_final) {
-                                name = service_dispatch3.get("DisplayName").getObjectAsString2();
+                            for (IJIDispatch service_dispatch : services_final) {
+                                name = service_dispatch.get("DisplayName").getObjectAsString2();
                                 System.out.println(" service '" + name + "' is not running");
                             }
                         }
@@ -656,6 +699,7 @@ public class WindowsHealth {
                 }
             }
             
+            // output a summary
             if (verbose < 1) {
                 if (warnings.size() > 0) {
                     System.out.print("WARNINGS:");
@@ -670,12 +714,16 @@ public class WindowsHealth {
                     }
                 }
                 if (warnings.size() == 0 && criticals.size() == 0)
-                    System.out.print("ALL OK"); 
+                    System.out.print("OK"); 
                 System.out.println();
             } else {
-                System.out.println();
-                System.out.print("" + warnings.size() + " warnings and ");
-                System.out.println("" + criticals.size() + " criticals.");
+                if (warnings.size() == 0 && criticals.size() == 0)
+                    System.out.println("OK");
+                else {
+                    System.out.println();
+                    System.out.print("" + warnings.size() + " warnings and ");
+                    System.out.println("" + criticals.size() + " criticals.");
+                }
             }
             
         } catch (UnknownHostException e) {
@@ -690,11 +738,13 @@ public class WindowsHealth {
                 fail(e, verbose);
         }
         
-        if (critical)
+        // if there are one or more criticals exit with exit status 2
+        if (criticals.size() != 0)
             System.exit(2);
-        if (warning)
+        // if there are one or more warnings exit with exit status 1
+        if (warnings.size() != 0)
             System.exit(1);
-        else
-            System.exit(0);
+        // otherwise exit with exit status 0
+        System.exit(0);
     }
 }
