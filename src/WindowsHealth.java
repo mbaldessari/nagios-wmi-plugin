@@ -122,7 +122,8 @@ public class WindowsHealth {
             System.out.print("Connecting to COMServer... ");
         }
 
-        comStub = new JIComServer(JIProgId.valueOf("WbemScripting.SWbemLocator"), address, session);
+        JIProgId progid = JIProgId.valueOf("WbemScripting.SWbemLocator");
+        comStub = new JIComServer(progid, address, session);
         IJIComObject unknown = comStub.createInstance();
         comObject = (IJIComObject)unknown.queryInterface("76A6415B-CB41-11d1-8B02-00600806D9B6");//ISWbemLocator
 
@@ -483,7 +484,7 @@ public class WindowsHealth {
             fail(message);
         }
         
-        // if the password is a asterisk prompt the user
+        // if the password is a asterisk ask the user for the password
         if (passwd.equals("*")) {
             Console cons = System.console();
             if (cons == null)
@@ -497,7 +498,7 @@ public class WindowsHealth {
             java.util.Arrays.fill(password, ' ');
         }
         
-        // all warnings and critical messages are added to this lists
+        // all warnings and criticals are added to this lists
         LinkedList<String> warnings = new LinkedList<String>();
         LinkedList<String> criticals = new LinkedList<String>();
         
@@ -714,11 +715,11 @@ public class WindowsHealth {
                     }
                 }
                 if (warnings.size() == 0 && criticals.size() == 0)
-                    System.out.print("OK"); 
+                    System.out.print("ALL OK"); 
                 System.out.println();
             } else {
                 if (warnings.size() == 0 && criticals.size() == 0)
-                    System.out.println("OK");
+                    System.out.println("ALL OK");
                 else {
                     System.out.println();
                     System.out.print("" + warnings.size() + " warnings and ");

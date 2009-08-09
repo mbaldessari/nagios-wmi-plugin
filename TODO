@@ -1,3 +1,7 @@
 - Write man page
 - Write example settings file
 - Research the minimum rights necessary for WMI queries
+- Print "OK" output when everything is fine - OK
+- Investigate the gcj vs openjdk problem - OK
+- Simplify the parsing of cmd parameters - OK
+- j-interop creates the log file always with the same name (/tmp/j-Interop0.log)
