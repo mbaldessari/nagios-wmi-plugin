@@ -1,0 +1,15 @@
+X-Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat
+X-Debianized-By: Michele Baldessari <michele@pupazzo.org>
+X-Debianized-Date: Fri, 12 Jun 2009 22:35:36 +0900.
+X-Source-Downloaded-From: https://github.com/mbaldessari/nagios-wmi-monitor/tree
+
+Files: debian/*
+Copyright: © 2009 Michele Baldessari <michele@pupazzo.org>
+License: LGPL-3
+
+Files: *
+Copyright: © 2009 Alexander Sparber, Michele Baldessari <michele@pupazzo.org> 
+License: LGPL-3
+
+On Debian machines the full text of the GNU General Public 
+License in the file /usr/share/common-licenses/LGPL-3.

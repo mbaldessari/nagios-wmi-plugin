@@ -1,0 +1,6 @@
+nagios-wmi-plugin (0.1-1) unstable; urgency=low
+
+  * Initial packaging
+  * Switch to openjdk-6-jdk because of lack of io.Console
+
+ -- Michele Baldessari <michele@pupazzo.org>  Sat, 25 Jul 2009 22:49:19 +0200

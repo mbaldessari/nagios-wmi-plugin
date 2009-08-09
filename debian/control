@@ -1,0 +1,17 @@
+Source: nagios-wmi-plugin
+Section: java
+Priority: extra
+Maintainer: Michele Baldessari <michele@pupazzo.org>
+Build-Depends: debhelper (>= 5)
+Build-Depends-Indep: libjcifs-java, ant, openjdk-6-jdk, libjinterop-java, libjargs-java
+Standards-Version: 3.8.2
+Homepage: https://github.com/mbaldessari/nagios-wmi-plugin/tree
+
+Package: nagios-wmi-plugin
+Architecture: all
+Depends: ${misc:Depends}, libjinterop-java, libjargs-java
+Description: Plugin for nagios to monitor Microsoft Windows machines via wmi
+ Script that help monitoring windows machines natively via WMI.  This nagios 
+ plugin uses the WMI (Windows Mangement Interface) subsystem to retrieve
+ information from the Windows machines. This plugin monitors CPU, RAM, Hard 
+ Drives and services.
