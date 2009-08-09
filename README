@@ -3,6 +3,7 @@ nagios-wmi-plugin
 The goal of this little nagios plugin is the following:
 
 - Monitor the health of a Windows machine in a very simple way (little or no tuning should ever be necessary)
+- Monitor all the basic OS factors that make a system healthy (free RAM, CPU load, free disk space, all services running)
 - Do not make use of any locally installed agents (no sw beyond a normal Windows Server should be necessary)
 - Use the native Windows subsystem available (amongst other things) for monitoring
 
