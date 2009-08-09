@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH CL-DUMP 1 "Jul 26, 2009"
+.TH NAGIOS-WMI-PLUGIN 1 "Jul 26, 2009"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -19,15 +19,21 @@
 nagios-wmi-plugin \- Verify a Windows' machine system health via WMI 
 .SH SYNOPSIS
 .B wmi\-nagios\-plugin
-[\fI-h host\fR] [\fI-p port\fR] [\fI-D bind-dn\fR] -w bind-password | -P bind-cert
-       [\fI-r replica-roots\fR] [\fI-o output-file\fR] [\fI-c\fR] [\fI-v\fR]
-
+[\fI-t/--target-host host\fR] [\fI-d/--domain domain\fR] [\fI-u/--user user\fR] [\fI-p/--password password\fR]
+[\fI--timeout socket_time_out\fR] [\fI--cpu\fR] [\fI--cpu-warning warning_treshold\fR] [\fI--cpu-critical critical_treshold\fR]
+[\fI--mem\fR] [\fI--mem-warning warning_treshold\fR] [\fI--mem-critical critical_treshold\fR]
+[\fI--disk\fR] [\fI--disk-warning warning_treshold\fR] [\fI--disk-critical critical_treshold\fR]
+[\fI-n/--number number_of_measures\fR] [\fI--delay measure_delay\fR] [\fI--services\fR]
+[\fI-x/--exclude service1;service2;..\fR] [\fI-h/--help\fR] [\fI-v/--verbose\fR] [\fI-V/--version\fR] [\fIsettings_file.conf\fR]
 .PP
-.B cl\-dump
-\-i changelog\-ldif\-file\-with\-base64encoding [\fI\-o output\-file\fR] [\fI\-c\fR]
+.B nagios\-wmi\-plugin
 .PP
 .SH DESCRIPTION
-Dump and decode Directory Server replication change log
+This plugin monitors the basic OS health of a Windows machine. It uses the Windows Management Interface (WMI) and can
+check CPU load, free RAM, free space on hard drives and that all services set to automatic are running.
+All options can be defined in a configuration file to be passed as an argument. All the options set in this
+conf file can be overridden via parameters on the command line. The tipical usage via Nagios will be with all options
+defined in the configuration file and the ip address defined via command line.
 .PP
 .\" TeX users may be more comfortable with the \fB<whatever>\fP and
 .\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
@@ -35,52 +41,77 @@ Dump and decode Directory Server replication change log
 .SH OPTIONS
 A summary of options is included below.
 .TP
-.B \-c 
-Dump and interpret CSN only. This option can be used with or
-without -i option.
+.B \-t/\-\-target\-host host
+Target host to be monitored
 .TP
-.B \-D bind\-dn
-Directory server's bind DN. Default to "cn=Directory Manager" if
-the option is omitted.
+.B \-d/\-\-domain domain
+Domain of the user that will run the WMI queries on the remote machine
 .TP
-.B \-h host
-Directory server's host. Default to the server where the script
-is running.
+.B \-u/\-\-user user
+Logon name of the use that will run the WMI queries on the remote machine
 .TP
-.B \-i changelog\-ldif\-file\-with\-base64encoding
-If you already have a ldif-like changelog, but the changes
-in that file are encoded, you may use this option to
-decode that ldif-like changelog.
+.B \-p/\-\-password password
+Password for the WMI user
 .TP
-.B \-o output\-file
-Path name for the final result. Default to STDOUT if omitted.
+.B \-\-timeout socket_timeout
+Sets the socket timeout. The default is 5000ms
 .TP
-.B \-p port
-Directory server's port. Default to 389.
+.B \-\-cpu
+Monitors CPU
 .TP
-.B \-P bind\-cert
-Pathname of binding certificate DB
+.B \-\-cpu-warning
+What percentage of CPU load is to be considered as warning. Default is 85%.
 .TP
-.B \-r replica\-roots
-Specify replica roots whose changelog you want to dump. The replica
-roots may be seperated by comma. All the replica roots would be
-dumped if the option is omitted.
+.B \-\-cpu-critical
+What percentage of CPU load is to be considered as critical. Default is 95%.
 .TP
-.B \-v 
+.B \-\-mem
+Monitors free RAM
+.TP
+.B \-\-mem-warning
+What percentage of occupied RAM is to be considered as warning. Default is 85%.
+.TP
+.B \-\-mem-critical
+What percentage of occupied RAM is to be considered as critical. Default is 95%.
+.TP
+.B \-\-disk
+Monitors all fixed hard drives for free space
+.TP
+.B \-\-disk-warning
+What percentage of occupied hard drive is to be considered as warning. Default is 85%.
+.TP
+.B \-\-disk-critical
+What percentage of occupied hard drive is to be considered as warning. Default is 95%.
+.TP
+.B \-n/\-\-number number of measures
+How often should the measurements be done.
+.TP
+.B \-\-delay delay between measures
+What should the dealy between measurements be.
+.TP
+.B \-\-services
+Monitors Windows services. Queries all services which are set to start automatically and are not currently running.
+.TP
+.B \-x/\-\-exclude service1;service2;...
+Exclude some services which usually start automatically, but which are safe to ignore (i.e. Performance and Logs)
+.TP
+.B \-h/\-\-help
+Prints a small program help
+.TP
+.B \-v/\-\-verbose
+Be more verbose in the output
+.TP
+.B \-V/\-\-version
 Print the version of this script.
 .TP
-.B \-w bind\-password
-Password for the bind DN
-.SH RESTRICTIONS
-If you are not using \-i option, the script should be run when the server
-is running, and from where the server's changelog directory is accessible.
+.B settings_file.conf
+Passes a settings file which contains defaults. All options in the settings file can be overridden by CLI parameters.
 .br
 .SH SEE ALSO
-.BR repl-monitor (1)
+.BR nagios3
 .br
 .SH AUTHOR
-cl\-dump was written by the Fedora Directory Project
+nagios\-wmi\-plugin was written by Alexander Sparber and Michele Baldessari
 .PP
 This manual page was written by Michele Baldessari <michele@pupazzo.org>,
 for the Debian project (but may be used by others).
-
