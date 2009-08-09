@@ -86,11 +86,6 @@ public class WindowsHealth {
         "   \n" +
         "   -h / --help                           display this help message\n" +
         "   -v / --verbose                        be extra verbose\n" +
-        "   -q / --quiet                          be extra quiet\n" +
-        "   -l <Level> / --logging <Level>        set the logging level (default is OFF)\n" +
-        "                                         possible values are:\n" +
-        "                                          ALL, CONFIG, FINE, FINER, FINEST,\n" +
-        "                                          INFO, OFF, SERVERE, WARNING\n" +
         "   -V / --version                        display version information\n" +
         "\n";
 
@@ -342,16 +337,16 @@ public class WindowsHealth {
         int delay = 1000;
 
         boolean cpu = false;
-        int cpu_warning = 50;
-        int cpu_critical = 80;
+        int cpu_warning = 85;
+        int cpu_critical = 95;
 
         boolean memory = false;
-        int mem_warning = 50;
-        int mem_critical = 80;
+        int mem_warning = 85;
+        int mem_critical = 95;
 
         boolean disk = false;
-        int disk_warning = 50;
-        int disk_critical = 80;
+        int disk_warning = 85;
+        int disk_critical = 95;
 
         boolean service = false;
         String exclude = "";
@@ -382,8 +377,6 @@ public class WindowsHealth {
         Option exclude_op = parser.addStringOption('x', "exclude");
         Option help_op = parser.addBooleanOption('h', "help");
         Option verbose_op = parser.addBooleanOption('v', "verbose");
-        Option quiet_op = parser.addBooleanOption('q', "quiet");
-        Option logging_op = parser.addStringOption('l', "logging");
         Option version_op = parser.addBooleanOption('V', "version");
         
         try {
@@ -448,9 +441,7 @@ public class WindowsHealth {
             exclude = (String)getValue(parser, properties, exclude_op, service);
             
             verbose += parser.getOptionValues(verbose_op).size();
-            verbose -= parser.getOptionValues(quiet_op).size();
 
-            logging = Level.parse((String)getValue(parser, properties, logging_op, logging));
             
         } catch (NumberFormatException e) {
             fail(e.getMessage());
