@@ -1,8 +1,1 @@
 - Add option to define which services should always be running (no matter if they should start or if they are installed: i.e. Antivirus) 
-- Write example settings file
-- Write man page - OK
-- Research the minimum rights necessary for WMI queries - OK
-- Print "OK" output when everything is fine - OK
-- Investigate the gcj vs openjdk problem - OK
-- Simplify the parsing of cmd parameters - OK
-- j-interop creates the log file always with the same name (/tmp/j-Interop0.log) - OK
