@@ -83,10 +83,6 @@ public class WindowsHealth {
         "                                         should be running\n" +
         "   -x <service1,service2,...> / --exclude=<service1;service2;...>\n" +
         "                                         services which should be ignored\n" +
-        "   --serv_warning=<n>                    warn if at least n services are\n" +
-        "                                         not running (default is 1)\n" +
-        "   --serv_critical=<n>                   set status to critical if at least n\n" +
-        "                                         services are not running (default is 5)\n" +
         "   \n" +
         "   -h / --help                           display this help message\n" +
         "   -v / --verbose                        be extra verbose\n" +
@@ -359,8 +355,7 @@ public class WindowsHealth {
 
         boolean service = false;
         String exclude = "";
-        int serv_warning = 1;
-        int serv_critical = 5;
+        int serv_critical = 1;
 
         int verbose = 1;
         Level logging = Level.OFF;
@@ -385,8 +380,6 @@ public class WindowsHealth {
         Option disk_critical_op = parser.addIntegerOption("disk_critical");
         Option service_op = parser.addBooleanOption("services");
         Option exclude_op = parser.addStringOption('x', "exclude");
-        Option serv_warning_op = parser.addIntegerOption("serv_warning");
-        Option serv_critical_op = parser.addIntegerOption("serv_critical");
         Option help_op = parser.addBooleanOption('h', "help");
         Option verbose_op = parser.addBooleanOption('v', "verbose");
         Option quiet_op = parser.addBooleanOption('q', "quiet");
@@ -453,8 +446,6 @@ public class WindowsHealth {
             
             service = (Boolean)getValue(parser, properties, service_op, service);
             exclude = (String)getValue(parser, properties, exclude_op, service);
-            serv_warning = (Integer)getValue(parser, properties, serv_warning_op, serv_warning);
-            serv_critical = (Integer)getValue(parser, properties, serv_critical_op, serv_critical);
             
             verbose += parser.getOptionValues(verbose_op).size();
             verbose -= parser.getOptionValues(quiet_op).size();
@@ -668,16 +659,12 @@ public class WindowsHealth {
                     
                     if (size >= serv_critical) {
                         criticals.add(serv);
-                    } else if (size >= serv_warning) {
-                        warnings.add(serv);
                     } else if (verbose == 1)
                         continue;
                     
                     if (verbose >= 1) {
                         if (size >= serv_critical)
                             System.out.print("CRITICAL: ");
-                        else if (size >= serv_warning)
-                            System.out.print("WARNING: ");
                         if (verbose == 1) {
                             System.out.print(size + " service(s) (");
                             for (IJIDispatch service_dispatch : services_final) {
