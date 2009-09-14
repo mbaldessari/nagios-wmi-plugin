@@ -203,6 +203,8 @@ public class WindowsHealth {
         return Long.parseLong(wbemObject_dispatch.get("AvailableKBytes").getObjectAsString().getString());
     }
     
+    /* FIXME: This code sometimes fails with an "org.jinterop.dcom.common.JIException: An internal error occurred. [0x8001FFFF]"
+     * on Windows 2008 */
     public int getCPUUsage() throws JIException {
         System.gc();
         
